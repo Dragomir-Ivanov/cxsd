@@ -118,7 +118,13 @@ export class TS extends Exporter {
 			(type: Type) => {
 				if(type.isPlainPrimitive && (!type.literalList || !type.literalList.length)) {
 					return(type.primitiveType.name);
-				} else return(this.writeTypeRef(type, ''));
+				} else {
+					let tr = this.writeTypeRef(type, '');
+					if ( type.childList.length > 0 && ref.max <= 1) {
+						tr += ` = new ${tr}()`;
+					}
+					return tr;
+				}
 			}
 		);
 
@@ -128,7 +134,7 @@ export class TS extends Exporter {
 
 		if(ref.max > 1) {
 			if(outTypeList.length > 1) return('(' + outTypes + ')[]');
-			else return(outTypes + '[]');
+			else return(outTypes + `[] = new Array<${outTypes}>()`);
 		} else return(outTypes);
 	}
 
@@ -224,21 +230,9 @@ export class TS extends Exporter {
 		} else if(type.isList) {
 			output.push(exportPrefix + 'type ' + name + ' = ' + content + ';' + '\n');
 		} else if(type.isPlainPrimitive) {
-			parentDef = this.writeTypeRef(type.parent, '_');
-
 			output.push(exportPrefix + 'type ' + name + ' = ' + content + ';' + '\n');
-			if(type.literalList && type.literalList.length) {
-				output.push('interface _' + name + this.writeParents(parentDef, type.mixinList) + ' { ' + 'content' + ': ' + name + '; }' + '\n');
 			} else {
-				// NOTE: Substitution groups are ignored here!
-				output.push('type _' + name + ' = ' + parentDef + ';' + '\n');
-			}
-		} else {
-			if(type.parent) parentDef = this.writeTypeRef(type.parent, '_');
-
-			output.push('interface _' + name + this.writeParents(parentDef, type.mixinList) + ' ' + content + '\n');
-			output.push(exportPrefix + 'interface ' + name + ' extends _' + name + ' { constructor: { new(): ' + name + ' }; }' + '\n');
-			if(type.isExported) output.push(exportPrefix + 'var ' + name + ': { new(): ' + name + ' };' + '\n');
+			output.push('export class ' + name + ' ' + content + '\n');
 		}
 
 		return(output.join(''));
@@ -299,28 +293,11 @@ export class TS extends Exporter {
 		output.push('');
 		this.writeAugmentations(output);
 
-		output.push('interface ' + baseName + ' {');
-		output.push('\t_exists: boolean;');
-		output.push('\t_namespace: string;');
-		output.push('}');
-
 		for(var type of namespace.typeList.slice(0).sort((a: Type, b: Type) => a.safeName.localeCompare(b.safeName))) {
 			if(!type) continue;
 
 			output.push(this.writeType(type));
 		}
-
-		output.push('export interface ' + docName + ' extends ' + baseName + ' {');
-
-		for(var child of doc.childList) {
-			var outElement = this.writeMember(child, true);
-			if(outElement) {
-				output.push(outElement);
-			}
-		}
-
-		output.push('}');
-		output.push('export var ' + docName + ': ' + docName + ';\n');
 
 		return(output.join('\n'));
 	}

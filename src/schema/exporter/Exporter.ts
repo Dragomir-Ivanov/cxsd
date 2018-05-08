@@ -25,6 +25,8 @@ export abstract class Exporter extends Transform<Exporter, boolean, State> {
 		var importTbl = this.namespace.getUsedImportTbl();
 
 		for(var shortName of Object.keys(importTbl).sort()) {
+			if (shortName == 'Primitive') continue;
+
 			var namespace = importTbl[shortName];
 			var relativePath = this.getPathTo(namespace.name);
 			output.push(this.writeImport(shortName, relativePath, namespace.name));
