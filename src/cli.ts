@@ -36,7 +36,7 @@ function handleConvert(urlRemote: string, opts: { [key: string]: any }) {
 	var schemaContext = new schema.Context();
 	var xsdContext = new Context(schemaContext);
 
-	var fetchOptions: FetchOptions = {allowRemote: true, allowLocal: true, allowCacheWrite: opts['cache'] || true};
+	var fetchOptions: FetchOptions = {allowRemote: true, allowLocal: true, allowCacheWrite: opts['cache']};
 
 	var jsCache = new Cache(opts['outJs'] || 'xmlns', {indexName: '_index.js'});
 	var tsCache = new Cache(opts['outTs'] || 'xmlns', {indexName: '_index.d.ts'});
