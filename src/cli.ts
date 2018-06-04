@@ -24,7 +24,8 @@ interface ICommand extends _ICommand {
 	.description('XSD download and conversion tool')
 	// .option('-c, --cache-xsd <path>', 'Cache downloaded XSD filed under <path>')
 	.option('-t, --out-ts <path>', 'Output TypeScript definitions under <path>')
-	.option('-j, --out-js <path>', 'Output JavaScript modules under <path>')
+  .option('-j, --out-js <path>', 'Output JavaScript modules under <path>')
+  .option('--no-cache', 'Disables cget caching')
 	.action(handleConvert)
 	.parse(process.argv)
 );
@@ -35,7 +36,7 @@ function handleConvert(urlRemote: string, opts: { [key: string]: any }) {
 	var schemaContext = new schema.Context();
 	var xsdContext = new Context(schemaContext);
 
-	var fetchOptions: FetchOptions = {allowRemote: true, allowLocal: true};
+	var fetchOptions: FetchOptions = {allowRemote: true, allowLocal: true, allowCacheWrite: opts['cache'] || true};
 
 	var jsCache = new Cache(opts['outJs'] || 'xmlns', {indexName: '_index.js'});
 	var tsCache = new Cache(opts['outTs'] || 'xmlns', {indexName: '_index.d.ts'});
