@@ -109,7 +109,7 @@ export class TS extends Exporter {
 		return(' extends ' + parentList.join(', '));
 	}
 
-	writeTypeList(ref: MemberRef) {
+	writeTypeList(ref: MemberRef, sideEffects: any) {
 		var typeList = ref.member.typeList;
 
 		if(ref.max > 1 && ref.member.proxy) typeList = [ref.member.proxy];
@@ -121,6 +121,9 @@ export class TS extends Exporter {
 				} else {
 					let tr = this.writeTypeRef(type, '');
 					if ( type.childList.length > 0 && ref.max <= 1) {
+						if (sideEffects) {
+							sideEffects.initialized = true;
+						}
 						tr += ` = new ${tr}()`;
 					}
 					return tr;
@@ -133,9 +136,17 @@ export class TS extends Exporter {
 		var outTypes = outTypeList.sort().join(' | ');
 
 		if(ref.max > 1) {
-			if(outTypeList.length > 1) return('(' + outTypes + ')[]');
-			else return(outTypes + `[] = new Array<${outTypes}>()`);
-		} else return(outTypes);
+			if (outTypeList.length > 1) {
+				return('(' + outTypes + ')[]');
+			} else {
+				if (sideEffects) {
+					sideEffects.initialized = true;
+				}
+				return(outTypes + `[] = new Array<${outTypes}>()`);
+			}
+		} else {
+			return(outTypes);
+		}
 	}
 
 	writeMember(ref: MemberRef, isGlobal: boolean) {
@@ -153,11 +164,19 @@ export class TS extends Exporter {
 			output.push('\n');
 		}
 
+		var sideEffects:any = {};
+		var outTypes = this.writeTypeList(ref, sideEffects);
+
 		output.push(indent + ref.safeName);
-		if(ref.min == 0) output.push('?');
+		if (ref.max == 1) {
+			if (!sideEffects.initialized) {
+				output.push('?');
+			}
+		} else if (ref.min == 0) {
+			output.push('?');
+		}
 		output.push(': ');
 
-		var outTypes = this.writeTypeList(ref);
 		if(!outTypes) return('');
 
 		output.push(outTypes);
@@ -178,7 +197,7 @@ export class TS extends Exporter {
 				} else output.push(literalList[0]);
 			} else output.push(type.primitiveType.name);
 		} else if(type.isList) {
-			output.push(this.writeTypeList(type.childList[0]));
+			output.push(this.writeTypeList(type.childList[0], null));
 		} else {
 			var outMemberList: string[] = [];
 
